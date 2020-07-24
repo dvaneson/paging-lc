@@ -1,0 +1,7 @@
+*.o
+*.bc
+*.map
+*.mil
+*.png
+*/cdrom
+cdrom.iso
