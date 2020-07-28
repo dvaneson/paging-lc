@@ -9,6 +9,7 @@ This file contains an LC solution to the LLP context switching lab.
 > require "widgets.llc"
 
 > external bootdata = 0x1000 :: Ref MimgBootData
+> external initdir = 0xc0106000 :: Ref PageDir
 
 The program sets up a window for kernel output on the left of
 the screen (with a surrounding border), displays the bootdata,
@@ -23,7 +24,7 @@ the two user programs.
 > kernel
 >   = do wsetAttr console (wordToByte 0x20)
 >        clearScreen
->        puts " Context switching kernel has booted!"
+>        puts " Context switching kernel has booted!\n"
 >        console `reInit` window (modIx 1)  (modIx 1)
 >                                (modIx 23) (modIx 45)
 >                                (wordToByte 0x0f)
@@ -40,7 +41,8 @@ the two user programs.
 >                       Just q  -> puts "Found header for second user program:\n"
 >                                  putHeader (fst q)
 >                                  puts "\n"
->                                  runTwo (fst p) (fst q)
+>                                  -- runTwo (fst p) (fst q)
+>        putPageDir initdir
 >        puts "\nHalting kernel, returning to mimgload\n"
 
 > runTwo :: Ref MimgHeader -> Ref MimgHeader -> Proc Unit

@@ -22,6 +22,5 @@ clean:
 	-make -C mimg             clean
 	-make -C libs-lc          clean
 	-make -C paging-lc        clean
-	-make -C switching-lc     clean
 
 #----------------------------------------------------------------------------

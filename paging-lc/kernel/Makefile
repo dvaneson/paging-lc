@@ -1,5 +1,12 @@
 include ../../Makefile.common
 
+KERNEL_SPACE    = 0xc0000000      # Kernel space starts at 3GB
+KERNEL_LOAD     = 0x00100000      # Kernel loads at 1MB
+
+CCDEFS  = -DKERNEL_SPACE=${KERNEL_SPACE} -DKERNEL_LOAD=${KERNEL_LOAD}
+
+LDDEFS  = --defsym KERNEL_SPACE=${KERNEL_SPACE} --defsym KERNEL_LOAD=${KERNEL_LOAD}
+
 all: kernel
 
 #----------------------------------------------------------------------------
@@ -9,11 +16,11 @@ all: kernel
 KOBJS   = init.o opt-combined.o
 
 kernel: ${KOBJS} kernel.ld
-	$(LD) -T kernel.ld -o kernel ${KOBJS} ${LIBPATH} --print-map > kernel.map
+	$(LD) ${LDDEFS} -T kernel.ld -o kernel ${KOBJS} ${LIBPATH} --print-map > kernel.map
 	strip kernel
 
-init.o: init.s
-	$(CC) -c -o init.o init.s
+init.o: init.S
+	$(CC) ${CCDEFS} -c -o init.o init.S
 
 kernel.ll: kernel.llc widgets.llc
 	milc $(MILOPTS) kernel.llc -lkernel.ll -i../../libs-lc \
@@ -30,7 +37,7 @@ opt-combined.bc: combined.bc
 	opt -always-inline -o=opt-combined.bc combined.bc
 
 opt-combined.o: opt-combined.bc
-	clang -c -m32 ${CCOPTS} -o opt-combined.o opt-combined.bc
+	clang -c -m32 ${CCOPTS} ${CCDEFS} -o opt-combined.o opt-combined.bc
 	llc -O2 -march=x86 opt-combined.bc  # for debugging/inspection of .s
 
 #----------------------------------------------------------------------------

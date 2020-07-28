@@ -3,6 +3,17 @@
 #
 # Mark P. Jones, April 2006, 2016
 
+#define PHYSMAP (32 << 20)  
+
+#define PERMS_KERNELSPACE 0x83
+
+#define PAGESIZE   12
+#define PAGEBYTES  (1 << PAGESIZE)
+#define PAGEWORDS  (PAGEBYTES >> 2)
+#define PAGEMASK   (PAGEBYTES - 1)
+#define SUPERSIZE  22
+#define SUPERBYTES (1 << SUPERSIZE)
+
 #--------------------------------------------------------------------------
 # General definitions:
 #--------------------------------------------------------------------------
@@ -14,6 +25,10 @@
 #--------------------------------------------------------------------------
 
 	.data
+	.globl  initdir
+	.align  (1<<PAGESIZE)
+initdir:.space  4096            # Initial page directory
+
 	.space	4096		# Kernel stack
 stack:
 
@@ -24,14 +39,58 @@ stack:
 	.text
 	.globl	entry
 entry:	cli			# Turn off interrupts
+
+	#------------------------------------------------------------------
+	# Create initial page directory in which the initial PHYSMAP
+	# portion of physical memory is mapped 1:1 and into KERNEL_SPACE.
+
+	# Address of page dir:  (we're not in high memory yet ...)
+	leal    (initdir-KERNEL_SPACE), %edi
+	movl    %edi, %esi      # save in %esi
+
+	movl    $(PAGEWORDS), %ecx     # Zero out complete page directory. 
+	movl    $0, %eax		# 1024 b/c page size = 4096 and 0'ing 4 bytes at a time
+1:	movl    %eax, (%edi)
+	addl    $4, %edi
+	decl    %ecx
+	jnz     1b
+
+	movl    %esi, %edi      # Set up 1:1 and kernelspace mappings
+	movl    $(PHYSMAP>>SUPERSIZE), %ecx
+	movl    $(PERMS_KERNELSPACE),  %eax
+
+1:	movl    %eax, (%edi)
+	movl    %eax, (4*(KERNEL_SPACE>>SUPERSIZE))(%edi)
+	addl    $4, %edi        # move to next page dir slots
+	addl    $(1<<SUPERSIZE), %eax  # entry for next superpage to be mapped
+	decl    %ecx
+	jnz     1b
+
+	#------------------------------------------------------------------
+	# Turn on paging/protected mode execution:
+
+	movl    %esi, %cr3              # Set page directory
+
+	mov     %cr4, %eax              # Enable super pages (CR4 bit 4)
+	orl     $(1<<4), %eax
+	movl    %eax, %cr4
+
+	movl    %cr0, %eax              # Turn on paging (1<<31)
+	orl     $((1<<31)|(1<<0)), %eax # and protection (1<<0)
+	movl    %eax, %cr0
+
+	movl    $high, %eax             # Make jump into kernel space
+	jmp     *%eax
+high:					# Now running at high addresses
 	leal	stack, %esp	# Set up initial kernel stack
 
 	call	initGDT		# Set up global segment table
 	call	initIDT		# Set up interrupt descriptor table
+	call	initPIC		# Set up PIC
 	call	kernel		# Enter main kernel
 
-1:	hlt			# Catch all, in case kernel returns
-	jmp	1b
+halt:	hlt			# Catch all, in case kernel returns
+	jmp		halt
 
 #--------------------------------------------------------------------------
 # Task-state Segment (TSS):
@@ -235,6 +294,8 @@ initIDT:# Add descriptors for exception & interrupt handlers:
 	.endr
 
 	# Add descriptors for hardware irqs:
+    .equ    IRQ_BASE,   0x20        # lowest hw irq number
+
 	idtcalc	handler=timerInterrupt, slot=0x20
 
 	# Add descriptors for system calls:
@@ -301,7 +362,7 @@ nohandler:			# dummy interrupt handler
 
 	pushl	%ebx
 	pushl	%eax
-        call    unhandled
+    call    unhandled
 	addl	$8, %esp
 
 	movl	$0x12345678, %edx
@@ -310,6 +371,37 @@ nohandler:			# dummy interrupt handler
 1:	hlt
 	jmp 1b
 
+	ret
+
+	#------------------------------------------------------------------
+	# Initialize PIC:
+	# Configure standard 8259 programmable interrupt controller
+	# to remap hardware irqs 0x0-0xf into the range 0x20-0x2f.
+	.equ    PIC_1, 0x20
+	.equ    PIC_2, 0xa0
+
+	# Send ICWs (initialization control words) to initialize PIC.
+	# NOTE: Some sources suggest that there should be a delay between
+	# each output byte ... but I don't see that in the datasheet ...
+	.macro  initpic port, base, info, init
+	movb    $0x11, %al
+	outb    %al, $\port     # ICW1: Initialize + will be sending ICW4
+
+	movb    $\base, %al     # ICW2: Interrupt vector offset
+	outb    %al, $(\port+1)
+
+	movb    $\info, %al     # ICW3: Configure for two PICs
+	outb    %al, $(\port+1)
+
+	movb    $0x01, %al      # ICW4: 8086 mode
+	outb    %al, $(\port+1)
+
+	movb    $\init, %al     # OCW1: set initial mask
+	outb    %al, $(\port+1)
+	.endm
+
+initPIC:initpic PIC_1, IRQ_BASE,   0x04, 0xfb  # all but IRQ2 masked out
+	initpic PIC_2, IRQ_BASE+8, 0x02, 0xff
 	ret
 
 #--------------------------------------------------------------------------
@@ -351,10 +443,10 @@ returnTo:
 	addl	$CONTEXT_SIZE, %eax
 	movl	%eax, esp0	# Set stack address for kernel reentry
 	popa			# Restore registers
-	pop	%ds		# Restore segments
-	pop	%es
-	pop	%fs
-	pop	%gs
+	pop		%ds		# Restore segments
+	pop		%es
+	pop		%fs
+	pop		%gs
 	addl	$4, %esp	# Skip error code
 	iret			# Return from interrupt
 
