@@ -9,7 +9,7 @@ This file contains an LC solution to the LLP context switching lab.
 > require "widgets.llc"
 
 > external bootdata = 0x1000 :: Ref MimgBootData
-> external initdir = 0xc0106000 :: Ref PageDir
+> external initdir = 0xc0107000 :: Ref PageDir
 
 The program sets up a window for kernel output on the left of
 the screen (with a surrounding border), displays the bootdata,
@@ -29,21 +29,10 @@ the two user programs.
 >                                (modIx 23) (modIx 45)
 >                                (wordToByte 0x0f)
 >        clearScreen
->        putMimgBootData bootdata
->        c <- mimgHeaders bootdata
->        case advance nextMimgHeader 2 c of
->          Nothing -> puts "Did not find first user program\n"
->          Just p  -> puts "Found header for first user program:\n"
->                     putHeader (fst p)
->                     puts "\n"
->                     case nextMimgHeader (snd p) of
->                       Nothing -> puts "Did not find second user program\n"
->                       Just q  -> puts "Found header for second user program:\n"
->                                  putHeader (fst q)
->                                  puts "\n"
->                                  -- runTwo (fst p) (fst q)
+>        putMimgBootData bootdata 
 >        putPageDir initdir
 >        puts "\nHalting kernel, returning to mimgload\n"
+>        -- Add back in code for running both users later
 
 > runTwo :: Ref MimgHeader -> Ref MimgHeader -> Proc Unit
 > runTwo top bot
