@@ -28,6 +28,9 @@
 -----------------------
 # USER-LEVEL VIRTUAL MEMORY ADDRESSES
 
+> superPageOffset :: Word
+> superPageOffset = 22
+
 > type PageSize      = 4K
 > type SuperPageSize = 4M
 
@@ -152,7 +155,8 @@
 >            puts ", superpage\n"
 
 > putSuperRange :: Word -> Proc Unit
-> putSuperRange lo = putRange (shl lo 22) ((shl lo 22) + 0x3fffff)
+> putSuperRange lo = putRange start (start + 0x3fffff)
+>   where start = (lo `shl` superPageOffset)
 
 > putKPDE :: Ix KernelSuperPages1 -> KPDE -> Proc Unit
 > putKPDE ix kpde
@@ -169,8 +173,8 @@
 >            puts ", superpage\n"
 
 > putKernelSuperRange :: Word -> Proc Unit
-> putKernelSuperRange lo = putRange lower (lower + 0x3fffff)
->   where lower = (shl lo 22) + kernelSpace
+> putKernelSuperRange lo = putRange start (start + 0x3fffff)
+>   where start = (lo `shl` superPageOffset) + kernelSpace
 
 > putRange :: Word -> Word -> Proc Unit
 > putRange lo hi
