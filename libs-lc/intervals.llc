@@ -12,6 +12,7 @@ intervals be guarded by code to check for empty intervals?
 > require "wvram.llc"
 > require "selectionsort.llc"
 > require "noinline.mil"
+> require "ia32.llc"
 
 INTRODUCTION:
 
@@ -418,12 +419,6 @@ FLEXPAGES:
 
 > lowBits    :: Word -> Word
 > lowBits n   = (1 `shl` n) - 1
-
-> pageBits   :: Word
-> pageBits    = 12
-
-> wordBits   :: Word
-> wordBits    = 32
 
 > pageMask   :: Word
 > pageMask    = lowBits pageBits

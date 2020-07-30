@@ -28,8 +28,10 @@
 -----------------------
 # USER-LEVEL VIRTUAL MEMORY ADDRESSES
 
-> pageOffset      = 12 :: Word
-> superPageOffset = 22 :: Word
+> export pageBits, superPageBits, wordBits
+> pageBits      = 12 :: Word
+> superPageBits = 22 :: Word
+> wordBits      = 32 :: Word
 
 > type PageSize      = 4K
 > type SuperPageSize = 4M
@@ -156,7 +158,7 @@
 
 > putSuperRange :: Word -> Proc Unit
 > putSuperRange lo = putRange start (start + 0x3fffff)
->   where start = (lo `shl` superPageOffset)
+>   where start = (lo `shl` superPageBits)
 
 > putKPDE :: Ix KernelSuperPages1 -> KPDE -> Proc Unit
 > putKPDE ix kpde
@@ -174,7 +176,7 @@
 
 > putKernelSuperRange :: Word -> Proc Unit
 > putKernelSuperRange lo = putRange start (start + 0x3fffff)
->   where start = (lo `shl` superPageOffset) + kernelSpace
+>   where start = (lo `shl` superPageBits) + kernelSpace
 
 > putRange :: Word -> Word -> Proc Unit
 > putRange lo hi
