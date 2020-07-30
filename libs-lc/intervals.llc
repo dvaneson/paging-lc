@@ -319,7 +319,7 @@ large enough value for `NumIntervals`.)
 3) The reserved interval, `rint`, intersects with the right
 edge of `int` (so `int.lo < rint.lo <= int.hi <= rint.hi`),
 in which case we can still keep the left portion of `int`,
-corresponding to `int[hi=rint.lo-]`.
+corresponding to `int[hi=rint.lo-1]`.
 
 4) The reserved interval, `rint`, intersects with the left
 edge of `int` (so `rint.lo <= int.lo <= rint.hi < int.hi`),
@@ -432,7 +432,21 @@ FLEXPAGES:
 >     (bits <= wordBits)         &&   -- maximal size is word width
 >     ((int.lo `and` mask) == 0) &&   -- start is aligned
 >     ((int.lo + mask) == int.hi)     -- end is consistent with size
->     where mask = lowBits bits
+>   where mask = lowBits bits
+
+> export alignIntervals
+> alignIntervals :: Ref IntervalSet -> Proc Unit
+> alignIntervals intset
+>   = case<- get intset.last of
+>       Empty  -> return Unit
+>       Last l -> loop l.n l.n
+>   where
+>     loop i n    -- index to current interval, index to last interval
+>       = do int <- get (intset.array @ i)
+>            set (intset.array @ i) Interval[hi = pageDown int.hi | lo = pageUp int.lo]
+>            case decIx i of
+>                Just j -> loop j n
+>                Nothing -> return Unit
 
 > type PutFPage = Interval -> Word -> Proc Unit
 
@@ -467,7 +481,7 @@ FLEXPAGES:
 >                          if newBits < wordBits
 >                            then search newmask newBits
 >                            else found newmask newBits
->            found  mask bits
+>            found mask bits
 >              = do let end = lo + mask
 >                   out Interval[lo|hi=end] bits
 >                   if end < hi then findFPage (end+1)
@@ -475,4 +489,3 @@ FLEXPAGES:
 >        in do if hi < (lo+initMask)
 >                then return Unit
 >                else search initMask pageBits
-

@@ -40,11 +40,8 @@ the two user programs.
 >        headerCursor <- mimgHeaders bootdata
 >        reserveHeaders headerCursor
 >        putIntervals intSet 
->        case<- get intSet.last of
->           Empty  -> return Unit
->           Last l -> 
->               do int <- get (intSet.array @ l.n)      
->                  enumFPages1 int
+>        alignIntervals intSet 
+>        putIntervals intSet 
 >        puts "\nHalting kernel, returning to mimgload\n"
 >        -- Add back in code for running both users later
 
