@@ -400,6 +400,20 @@ to make debugging output a little easier to read and interpret.
 >  where intervalLt      :: Interval -> Interval -> Bool
 >        a `intervalLt` b = a.lo < b.lo
 
+> export alignIntervals
+> alignIntervals :: Ref IntervalSet -> Proc Unit
+> alignIntervals intset
+>   = case<- get intset.last of
+>       Empty  -> return Unit
+>       Last l -> loop l.n l.n
+>   where
+>     loop i n    -- index to current interval, index to last interval
+>       = do int <- get (intset.array @ i)
+>            set (intset.array @ i) Interval[hi = pageDown int.hi | lo = pageUp int.lo]
+>            case decIx i of
+>                Just j -> loop j n
+>                Nothing -> return Unit
+
 FLEXPAGES:
 
 > lowBits    :: Word -> Word
@@ -433,20 +447,6 @@ FLEXPAGES:
 >     ((int.lo `and` mask) == 0) &&   -- start is aligned
 >     ((int.lo + mask) == int.hi)     -- end is consistent with size
 >   where mask = lowBits bits
-
-> export alignIntervals
-> alignIntervals :: Ref IntervalSet -> Proc Unit
-> alignIntervals intset
->   = case<- get intset.last of
->       Empty  -> return Unit
->       Last l -> loop l.n l.n
->   where
->     loop i n    -- index to current interval, index to last interval
->       = do int <- get (intset.array @ i)
->            set (intset.array @ i) Interval[hi = pageDown int.hi | lo = pageUp int.lo]
->            case decIx i of
->                Just j -> loop j n
->                Nothing -> return Unit
 
 > type PutFPage = Interval -> Word -> Proc Unit
 

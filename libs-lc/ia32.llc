@@ -28,8 +28,8 @@
 -----------------------
 # USER-LEVEL VIRTUAL MEMORY ADDRESSES
 
-> superPageOffset :: Word
-> superPageOffset = 22
+> pageOffset      = 12 :: Word
+> superPageOffset = 22 :: Word
 
 > type PageSize      = 4K
 > type SuperPageSize = 4M
