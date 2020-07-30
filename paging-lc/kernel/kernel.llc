@@ -34,16 +34,28 @@ the two user programs.
 >        clearScreen
 >        putMimgBootData bootdata 
 >        putPageDir initdir
->        mmapCursor <- mimgMMap bootdata
->        insertMmaps mmapCursor
->        putIntervals intSet
->        headerCursor <- mimgHeaders bootdata
->        reserveHeaders headerCursor
->        putIntervals intSet 
->        alignIntervals intSet 
->        putIntervals intSet 
+>        setupIntervalSet
 >        puts "\nHalting kernel, returning to mimgload\n"
 >        -- Add back in code for running both users later
+
+> setupIntervalSet :: Proc Unit
+> setupIntervalSet 
+>   = do mmapCursor <- mimgMMap bootdata
+>        insertMmaps mmapCursor                 -- Insert memory map into the interval set
+>        putIntervals intSet
+>        reserveInterval intSet kernInterval    -- Exclude regions where the kernel was loaded
+>        reserveInterval intSet physmapInterval -- Exclude regions after PHYSMAP
+>        putIntervals intSet
+>        headerCursor <- mimgHeaders bootdata   
+>        reserveHeaders headerCursor            -- Exclude regions that are in the headers
+>        putIntervals intSet 
+>        alignIntervals intSet                  -- Align all the intervals to 4K
+>        putIntervals intSet 
+>   where
+>       kernInterval 
+>           = Interval[ hi = 1M-1 | lo = 0 ]            -- Reserve everything below 1MB for kernel load
+>       physmapInterval 
+>           = Interval[ hi = 0xffff_ffff | lo = 32M ]   -- Reserve eveything above 32MB for physmap
 
 > insertMmaps :: MimgMMapCursor -> Proc Unit
 > insertMmaps mmapCursor
