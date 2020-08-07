@@ -96,7 +96,7 @@
 ### Kernel-Space Page Directory Entries
 
 > bitdata KPDE /WordSize   -- Kernel Page Directory Entries, a variant of SuperPagePDE
->  = UnmappedKPDE  [ unused=bit0     :: Bit 31 | B0 ]   -- Unused entry (present bit reset)
+>  = UnmappedKPDE  [ unused=bit0 :: Bit 31 | B0 ]        -- Unused entry (present bit reset)
 >  | SuperPageKPDE [ B00                                 -- leading zeros
 >                  | ix          :: Ix KernelSuperPages1 -- physical superpage number
 >                  | unused=bit0 :: Bit 13
@@ -234,7 +234,7 @@ void showPdir(struct Pdir* pdir) {
 >   [ ptes :: Array 1K (Stored PTE) ]
 >   aligned PageSize
 
-> initPageTable :: Init PageTable
+> export initPageTable :: Init PageTable
 > initPageTable  = PageTable [ ptes <- initArray (\ix -> initStored UnmappedPTE[]) ]
 
 -----------------------

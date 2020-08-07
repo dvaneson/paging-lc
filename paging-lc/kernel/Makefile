@@ -22,7 +22,7 @@ kernel: ${KOBJS} kernel.ld
 init.o: init.S
 	$(CC) ${CCDEFS} -c -o init.o init.S
 
-kernel.ll: kernel.llc widgets.llc
+kernel.ll: kernel.llc widgets.llc paging.llc
 	milc $(MILOPTS) kernel.llc -lkernel.ll -i../../libs-lc \
 		-mkernel.mil \
 		--llvm-main=kernel --mil-main=kernel

@@ -401,19 +401,36 @@ to make debugging output a little easier to read and interpret.
 >  where intervalLt      :: Interval -> Interval -> Bool
 >        a `intervalLt` b = a.lo < b.lo
 
-> export alignIntervals
-> alignIntervals :: Ref IntervalSet -> Proc Unit
-> alignIntervals intset
+> export validateIntervals
+> validateIntervals :: Ref IntervalSet -> Proc Unit
+> validateIntervals intset
 >   = case<- get intset.last of
 >       Empty  -> return Unit
 >       Last l -> loop l.n l.n
 >   where
 >     loop i n    -- index to current interval, index to last interval
 >       = do int <- get (intset.array @ i)
->            set (intset.array @ i) Interval[hi = pageDown int.hi | lo = pageUp int.lo]
->            case decIx i of
->                Just j -> loop j n
->                Nothing -> return Unit
+>            let nint = Interval[hi = pageDown int.hi | lo = pageUp int.lo]
+>            if nint.hi > nint.lo
+>            then set (intset.array @ i) nint -- Valid interval, copy over current interval with new interval
+>                 case decIx i of
+>                   Just j  -> loop j n
+>                   Nothing -> return Unit
+>            else case decIx n of             -- Invalid interval, remove current interval by copying last into i and decrementing last                           
+>                   Just m  -> (intset.array @ n) >-> (intset.array @ i)
+>                              set intset.last Last[n]
+>                              loop i m
+>                   Nothing -> set intset.last Empty
+
+> export getInterval
+> getInterval :: Ref IntervalSet -> Proc (Maybe Interval)
+> getInterval intset
+>   = case<- get intset.last of
+>       Empty  -> return Nothing
+>       Last l -> do int <- get (intset.array @ l.n)
+>                    let nint = int[ hi = pageUp int.lo ]
+>                    reserveInterval intset nint
+>                    return (Just nint)
 
 FLEXPAGES:
 
@@ -435,7 +452,7 @@ FLEXPAGES:
 > pageDown   :: Word -> Word
 > pageDown a  = pageEnd (a - pageMask)
 
-> validFPage :: Interval -> Word -> Bool
+> export validFPage :: Interval -> Word -> Bool
 > validFPage int bits
 >   = (pageBits <= bits)         &&   -- minimal size is a page
 >     (bits <= wordBits)         &&   -- maximal size is word width

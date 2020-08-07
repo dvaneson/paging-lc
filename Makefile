@@ -4,7 +4,6 @@ include Makefile.common
 .phony: all run libs clean
 
 BOOT = paging-lc
-# BOOT = switching-lc
 
 all:	libs
 	make -C ${BOOT}

@@ -7,12 +7,11 @@ This file contains an LC solution to the LLP context switching lab.
 > require "ia32.llc"
 > require "pc-hardware.llc"
 > require "widgets.llc"
-> require "intervals.llc"
+> require "paging.llc"
 
 > external bootdata = 0x1000 :: Ref MimgBootData
-> external initdir  = 0xc0108000 :: Ref PageDir
+> external initdir  = 0xc010_9000 :: Ref PageDir
 
-> area intSet <- IntervalSet[] :: Ref IntervalSet
 
 The program sets up a window for kernel output on the left of
 the screen (with a surrounding border), displays the bootdata,
@@ -34,56 +33,10 @@ the two user programs.
 >        clearScreen
 >        putMimgBootData bootdata 
 >        putPageDir initdir
->        initIntervalSet
+>        initIntervalSet bootdata
+>        pgdir <- allocPageDir
 >        puts "\nHalting kernel, returning to mimgload\n"
 >        -- Add back in code for running both users later
-
-> initIntervalSet :: Proc Unit
-> initIntervalSet 
->   = do mmapCursor <- mimgMMap bootdata
->        insertMmaps mmapCursor                 -- Insert memory map into the interval set
->        putIntervals intSet
->        reserveInterval intSet kernInterval    -- Exclude regions before the kernel load
->        reserveInterval intSet physmapInterval -- Exclude regions after physmap
->        putIntervals intSet
->        headerCursor <- mimgHeaders bootdata   
->        reserveHeaders headerCursor            -- Exclude regions that are in the headers
->        putIntervals intSet 
->        alignIntervals intSet                  -- Align all the intervals to 4K
->        putIntervals intSet 
->   where
->       kernInterval 
->           = Interval[ hi = 1M-1 | lo = 0 ]            -- Reserve everything below 1MB
->       physmapInterval 
->           = Interval[ hi = 0xffff_ffff | lo = 32M ]   -- Reserve eveything above 32MB
-
-> insertMmaps :: MimgMMapCursor -> Proc Unit
-> insertMmaps mmapCursor
->   = forallDo nextMimgMMap insertMMap mmapCursor
->   where
->       insertMMap :: Ref MimgMMap -> Proc Unit
->       insertMMap mmap 
->           = do start <- get mmap.start
->                end <- get mmap.end
->                insertInterval intSet Interval[hi=end| lo=start]
->                puts "Considering "
->                putMMap mmap
->                puts "\n"
->                return Unit
-
-> reserveHeaders :: MimgHeaderCursor -> Proc Unit
-> reserveHeaders headerCursor
->   = forallDo nextMimgHeader reserveHeader headerCursor
->   where
->       reserveHeader :: Ref MimgHeader -> Proc Unit
->       reserveHeader header
->           = do start <- get header.start
->                end <- get header.end
->                reserveInterval intSet Interval[hi=end| lo=start]
->                puts "Reserving "
->                putHeader header
->                puts "\n"
->                return Unit
 
 > runTwo :: Ref MimgHeader -> Ref MimgHeader -> Proc Unit
 > runTwo top bot

@@ -1,0 +1,86 @@
+> require "core.llc"
+> require "bit.llc"
+> require "ix.llc"
+> require "ia32.llc"
+> require "intervals.llc"
+> require "mimg.llc"
+
+----------------------------------------------
+# INTERVAL SET MANAGEMENT 
+----------------------------------------------
+
+> area intset <- IntervalSet[] :: Ref IntervalSet
+
+> export initIntervalSet :: Ref MimgBootData -> Proc Unit
+> initIntervalSet bootdata
+>   = do mmapCursor <- mimgMMap bootdata
+>        insertMmaps mmapCursor                 -- Insert memory map into the interval set
+>        putIntervals intset
+>        reserveInterval intset kernInterval    -- Exclude regions before the kernel load
+>        reserveInterval intset physmapInterval -- Exclude regions after physmap
+>        putIntervals intset
+>        headerCursor <- mimgHeaders bootdata   
+>        reserveHeaders headerCursor            -- Exclude regions that are in the headers
+>        putIntervals intset 
+>        validateIntervals intset               -- Align all the intervals to 4K
+>        putIntervals intset 
+>   where
+>       kernInterval 
+>           = Interval[ hi = 1M-1 | lo = 0 ]            -- Reserve everything below 1MB
+>       physmapInterval 
+>           = Interval[ hi = 0xffff_ffff | lo = 32M ]   -- Reserve eveything above 32MB
+
+> insertMmaps :: MimgMMapCursor -> Proc Unit
+> insertMmaps mmapCursor
+>   = forallDo nextMimgMMap insertMMap mmapCursor
+>   where
+>       insertMMap :: Ref MimgMMap -> Proc Unit
+>       insertMMap mmap 
+>           = do start <- get mmap.start
+>                end <- get mmap.end
+>                insertInterval intset Interval[hi=end| lo=start]
+>                puts "Considering "
+>                putMMap mmap
+>                puts "\n"
+>                return Unit
+
+> reserveHeaders :: MimgHeaderCursor -> Proc Unit
+> reserveHeaders headerCursor
+>   = forallDo nextMimgHeader reserveHeader headerCursor
+>   where
+>       reserveHeader :: Ref MimgHeader -> Proc Unit
+>       reserveHeader header
+>           = do start <- get header.start
+>                end <- get header.end
+>                reserveInterval intset Interval[hi=end| lo=start]
+>                puts "Reserving "
+>                putHeader header
+>                puts "\n"
+>                return Unit
+
+
+----------------------------------------------
+# PAGE ALLOCATION 
+----------------------------------------------
+
+> export allocPageDir, allocPageTable
+> allocPageDir   :: Proc (Ptr PageDir)
+> allocPageDir   = allocPage initPageDir
+
+> allocPageTable :: Proc (Ptr PageTable)
+> allocPageTable = allocPage initPageTable
+
+> allocPage      :: Init pg -> Proc (Ptr pg)
+> allocPage init = do rpg <- allocRawPage
+>                     case rpg of
+>                       Null   -> return Null
+>                       Ref pg -> reInit pg init
+>                                 return rpg
+
+> external allocRawPage = allocRawPageImp :: Proc (Ptr pg)
+> allocRawPageImp :: Proc Word
+> allocRawPageImp = case<- getInterval intset of 
+>                       Just int -> if validFPage int pageBits 
+>                                   then return int.lo
+>                                   else return 0
+>                       Nothing  -> return 0
