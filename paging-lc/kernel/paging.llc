@@ -9,21 +9,21 @@
 # INTERVAL SET MANAGEMENT 
 ----------------------------------------------
 
-> area intset <- IntervalSet[] :: Ref IntervalSet
+> area physmap <- IntervalSet[] :: Ref IntervalSet
 
-> export initIntervalSet :: Ref MimgBootData -> Proc Unit
-> initIntervalSet bootdata
+> export initPhysMap :: Ref MimgBootData -> Proc Unit
+> initPhysMap bootdata
 >   = do mmapCursor <- mimgMMap bootdata
 >        insertMmaps mmapCursor                 -- Insert memory map into the interval set
->        putIntervals intset
->        reserveInterval intset kernInterval    -- Exclude regions before the kernel load
->        reserveInterval intset physmapInterval -- Exclude regions after physmap
->        putIntervals intset
+>        putIntervals physmap
+>        reserveInterval physmap kernInterval    -- Exclude regions before the kernel load
+>        reserveInterval physmap physmapInterval -- Exclude regions after physmap
+>        putIntervals physmap
 >        headerCursor <- mimgHeaders bootdata   
 >        reserveHeaders headerCursor            -- Exclude regions that are in the headers
->        putIntervals intset 
->        validateIntervals intset               -- Align all the intervals to 4K
->        putIntervals intset 
+>        putIntervals physmap 
+>        validateIntervals physmap               -- Align all the intervals to 4K
+>        putIntervals physmap 
 >   where
 >       kernInterval 
 >           = Interval[ hi = 1M-1 | lo = 0 ]            -- Reserve everything below 1MB
@@ -38,7 +38,7 @@
 >       insertMMap mmap 
 >           = do start <- get mmap.start
 >                end <- get mmap.end
->                insertInterval intset Interval[hi=end| lo=start]
+>                insertInterval physmap Interval[hi=end| lo=start]
 >                puts "Considering "
 >                putMMap mmap
 >                puts "\n"
@@ -52,7 +52,7 @@
 >       reserveHeader header
 >           = do start <- get header.start
 >                end <- get header.end
->                reserveInterval intset Interval[hi=end| lo=start]
+>                reserveInterval physmap Interval[hi=end| lo=start]
 >                puts "Reserving "
 >                putHeader header
 >                puts "\n"
@@ -79,7 +79,7 @@
 
 > external allocRawPage = allocRawPageImp :: Proc (Ptr pg)
 > allocRawPageImp :: Proc Word
-> allocRawPageImp = case<- getInterval intset of 
+> allocRawPageImp = case<- getInterval physmap of 
 >                       Just int -> if validFPage int pageBits 
 >                                   then return int.lo
 >                                   else return 0

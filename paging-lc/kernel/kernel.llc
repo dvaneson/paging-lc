@@ -33,7 +33,7 @@ the two user programs.
 >        clearScreen
 >        putMimgBootData bootdata 
 >        putPageDir initdir
->        initIntervalSet bootdata
+>        initPhysMap bootdata
 >        pgdir <- allocPageDir
 >        puts "\nHalting kernel, returning to mimgload\n"
 >        -- Add back in code for running both users later
