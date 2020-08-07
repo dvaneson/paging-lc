@@ -27,7 +27,11 @@
 	.data
 	.globl  initdir
 	.align  (1<<PAGESIZE)
-initdir:.space  4096            # Initial page directory
+initdir:
+	.space  4096            # Initial page directory
+	.globl	initdir_ptr
+initdir_ptr:
+	.long initdir
 
 	.space	4096		# Kernel stack
 stack:

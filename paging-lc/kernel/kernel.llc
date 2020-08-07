@@ -10,7 +10,7 @@ This file contains an LC solution to the LLP context switching lab.
 > require "paging.llc"
 
 > external bootdata = 0x1000 :: Ref MimgBootData
-> external initdir  = 0xc010_9000 :: Ref PageDir
+> external initdir {initdir_ptr}  :: Ref PageDir
 
 
 The program sets up a window for kernel output on the left of
@@ -34,7 +34,7 @@ the two user programs.
 >        putMimgBootData bootdata 
 >        putPageDir initdir
 >        initPhysMap bootdata
->        pgdir <- allocPageDir
+>        -- pgdir <- allocPageDir
 >        puts "\nHalting kernel, returning to mimgload\n"
 >        -- Add back in code for running both users later
 
