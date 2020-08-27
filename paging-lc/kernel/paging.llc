@@ -14,7 +14,7 @@
 > export initPhysMap :: Ref MimgBootData -> Proc Unit
 > initPhysMap bootdata
 >   = do mmapCursor <- mimgMMap bootdata
->        insertMmaps mmapCursor                 -- Insert memory map into the interval set
+>        insertMMaps mmapCursor                 -- Insert memory map into the interval set
 >        putIntervals physmap
 >        reserveInterval physmap kernInterval    -- Exclude regions before the kernel load
 >        reserveInterval physmap physmapInterval -- Exclude regions after physmap
@@ -22,7 +22,7 @@
 >        headerCursor <- mimgHeaders bootdata   
 >        reserveHeaders headerCursor            -- Exclude regions that are in the headers
 >        putIntervals physmap 
->        validateIntervals physmap               -- Align all the intervals to 4K
+>        validateIntervals                      -- Align all the intervals to 4K
 >        putIntervals physmap 
 >   where
 >       kernInterval 
@@ -30,15 +30,15 @@
 >       physmapInterval 
 >           = Interval[ hi = 0xffff_ffff | lo = 32M ]   -- Reserve eveything above 32MB
 
-> insertMmaps :: MimgMMapCursor -> Proc Unit
-> insertMmaps mmapCursor
+> insertMMaps :: MimgMMapCursor -> Proc Unit
+> insertMMaps mmapCursor
 >   = forallDo nextMimgMMap insertMMap mmapCursor
 >   where
 >       insertMMap :: Ref MimgMMap -> Proc Unit
 >       insertMMap mmap 
 >           = do start <- get mmap.start
 >                end <- get mmap.end
->                insertInterval physmap Interval[hi=end| lo=start]
+>                insertInterval physmap Interval[hi=end | lo=start]
 >                puts "Considering "
 >                putMMap mmap
 >                puts "\n"
@@ -52,11 +52,31 @@
 >       reserveHeader header
 >           = do start <- get header.start
 >                end <- get header.end
->                reserveInterval physmap Interval[hi=end| lo=start]
+>                reserveInterval physmap Interval[hi=end | lo=start]
 >                puts "Reserving "
 >                putHeader header
 >                puts "\n"
 >                return Unit
+
+> validateIntervals :: Proc Unit
+> validateIntervals 
+>   = case<- get physmap.last of
+>       Empty  -> return Unit
+>       Last l -> loop l.n l.n
+>   where
+>     loop i n    -- index to current interval, index to last interval
+>       = do int <- get (physmap.array @ i)
+>            let nint = Interval[hi = pageDown int.hi | lo = pageUp int.lo]
+>            if nint.hi > nint.lo
+>            then set (physmap.array @ i) nint -- Valid interval, copy over current interval with new interval
+>                 case decIx i of
+>                   Just j  -> loop j n
+>                   Nothing -> return Unit
+>            else case decIx n of             -- Invalid interval, remove current interval by copying last into i and decrementing last                           
+>                   Just m  -> (physmap.array @ n) >-> (physmap.array @ i)
+>                              set physmap.last Last[n]
+>                              loop i m
+>                   Nothing -> set physmap.last Empty
 
 
 ----------------------------------------------
@@ -79,8 +99,18 @@
 
 > external allocRawPage = allocRawPageImp :: Proc (Ptr pg)
 > allocRawPageImp :: Proc Word
-> allocRawPageImp = case<- getInterval physmap of 
->                       Just int -> if validFPage int pageBits 
->                                   then return int.lo
->                                   else return 0
+> allocRawPageImp = case<- getPageInterval of 
+>                       Just int -> return int.lo
 >                       Nothing  -> return 0
+
+> getPageInterval :: Proc (Maybe Interval)
+> getPageInterval
+>   = case<- get physmap.last of
+>       Empty  -> return Nothing
+>       Last l -> do int <- get (physmap.array @ l.n)
+>                    let nint = int[ hi = pageEnd int.lo ]     -- New interval from lo to the end of the page
+>                    if validFPage nint pageBits
+>                    then do reserveInterval physmap nint      -- Remove the interval from the set
+>                            validateIntervals                 -- Make sure the set has a valid page interval for next time 
+>                            return (Just nint)                --  in case the last interval has less than a page left
+>                    else return Nothing
