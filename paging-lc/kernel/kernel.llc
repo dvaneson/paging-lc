@@ -10,7 +10,7 @@ This file contains an LC solution to the LLP context switching lab.
 > require "paging.llc"
 
 > external bootdata = 0x1000 :: Ref MimgBootData
-> external initdir {initdir_ptr}  :: Ref PageDir
+> external initdir {initdir_ptr} :: Ref PageDir
 
 
 The program sets up a window for kernel output on the left of
