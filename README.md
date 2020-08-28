@@ -2,7 +2,7 @@
 
 A page table written in LC, based on the week 4 and week 5 labs from the
 [Languages and Low-Level Programming Course(LLP)](http://web.cecs.pdx.edu/~mpj/llp/).
-This lab was originally implemented in C, and can be found [here](https://github.com/dvaneson/paging).
+This lab was originally implemented in C, which can be found [here](https://github.com/dvaneson/paging).
 
 To compile and run this program, you will need a copy of
 [mil-tools](https://github.com/habit-lang/mil-tools). LC was intended to be
@@ -55,17 +55,6 @@ throw a null pointer exception.
 -   We recommend using the provided Makefiles to compile and run these
     programs. For example, you can build a specific demo program using:
 
-          make
-
-    In this case, the choice of program is set by the `BOOT` variable in
-    the top-level `Makefile`. If you prefer, you can also build and run
-    each of the programs from within its own directory (which might be
-    more convenient if you are planning to browse or edit the code for
-    that demo); in that case, be sure to run `make libs` in the top-level
-    directory first, as in the following example:
-
-          make libs          # must run in top-level directory
-          cd switching-lc
           make
 
     You can replace `make` with `make run` in either of the examples above
