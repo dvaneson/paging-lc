@@ -65,3 +65,49 @@ what will ultimately be possible using Habit.
     You can replace `make` with `make run` in either of the examples above
     to build and also run the program inside QEMU, or you can use `make clean`
     to remove temporary files that are generated during the build process.
+
+## libs-lc
+
+This program depends on libraries that are packaged together in the libs-lc
+folder. (These are used in addition to the standard LC libraries in
+`mil-tools/lib` that provide more general functionality). The library files in
+libs-lc include:
+
+-   `vram.llc`: A simple video RAM library that includes functions
+    for clearing the screen and writing data to screen.
+
+-   `wvram.llc`: An expanded version of `vram.llc` that supports
+    the definition and use of multiple "windows" within the video
+    RAM
+
+-   `ia32.llc`: A library of functions for working with low-level
+    IA32 data structures, including contexts (for capturing CPU
+    registers), and page tables and page directories for working
+    with the MMU.
+
+-   `cursor.llc`: The beginnings of a general library for using
+    "cursor" abstractions to traverse variable size data structures
+    in a safe manner.
+
+-   `mimg.llc`: Functions for reading and displaying the bootdata
+    information that is passed on by the `mimg` tool.
+
+-   `portio.llc`: Access to IA32 port IO, supported by the
+    LLVM and assembly code fragments in `portio.ll`.
+
+-   `pc-hardware.llc`: Functions for working with the programmable
+    interrupt controllers (PICs) and the programmable interval
+    timer (PIT) on a standard PC platform.
+
+-   `serial.llc`: Functions for printing single characters,
+    null-terminated strings, and numeric values on the COM1
+    serial port. When these demos are executed with the
+    provided `Makefile` settings in `QEMU`, all output that
+    is "printed on the serial port" will actually be displayed
+    in the main terminal window. This can be useful for viewing
+    and capturing program output, especially when there is too
+    much to fit on a single video RAM screen.
+
+-   `intervals.llc`: Code for working with sets of intervals (that
+    typically represent ranges of available or reserved memory
+    addresses).
