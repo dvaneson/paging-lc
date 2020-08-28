@@ -16,6 +16,12 @@ for handwritten code. Nevertheless, we hope that the resulting code will be
 relatively easy to understand, and that it will help to give some indication of
 what will ultimately be possible using Habit.
 
+Currently, only part of the week 4 lab has been implemented. A compilation error
+prevented further development. In its current state the program will compile and
+run, setting up a screen for the kernel and displaying various information.
+Uncommenting line 47 in `paging-lc/kernel/kernel.llc` will cause the compiler to
+throw a null pointer exception.
+
 ## Installation Notes:
 
 -   The code in this repository assumes that you have installed
