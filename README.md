@@ -4,15 +4,15 @@ A page table written in LC, based on the week 4 and week 5 labs from the
 [Languages and Low-Level Programming Course(LLP)](http://web.cecs.pdx.edu/~mpj/llp/).
 This lab was originally implemented in C, and can be found [here](https://github.com/dvaneson/paging).
 
-To compile and run this program, you will need a copy of mil-tools
-(https://github.com/habit-lang/mil-tools). LC was intended to be used primarily
-as an intermediate language for the Habit compiler, which uses mil-tools as its
-back end and alb (https://github.com/habit-lang/alb) as its front end. The long
-term goal is to transition this example to a Habit implementation, which will
-give access to a broader range of language features and avoid some of the
-awkward details that can be expected from trying to create programs in an
-intermediate language that was not originally intended to be used for
-handwritten code. Nevertheless, we hope that the resulting code will be
+To compile and run this program, you will need a copy of
+[mil-tools](https://github.com/habit-lang/mil-tools). LC was intended to be
+used primarily as an intermediate language for the Habit compiler, which uses
+mil-tools as its back end and [alb](https://github.com/habit-lang/alb) as its
+front end. The long term goal is to transition this example to a Habit
+implementation, which will give access to a broader range of language features
+and avoid some of the awkward details that can be expected from trying to create
+programs in an intermediate language that was not originally intended to be used
+for handwritten code. Nevertheless, we hope that the resulting code will be
 relatively easy to understand, and that it will help to give some indication of
 what will ultimately be possible using Habit.
 
