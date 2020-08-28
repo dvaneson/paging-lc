@@ -1,5 +1,3 @@
-This file contains an LC solution to the LLP context switching lab.
-  
 > require "serial.llc"
 > require "wvram.llc"
 > require "mimg.llc"
@@ -12,6 +10,7 @@ This file contains an LC solution to the LLP context switching lab.
 > external bootdata = 0x1000 :: Ref MimgBootData
 > external initdir {initdir_ptr} :: Ref PageDir
 
+This file aims to be an LC solution to the LLP paging labs.
 
 The program sets up a window for kernel output on the left of
 the screen (with a surrounding border), displays the bootdata,
@@ -21,6 +20,17 @@ in separate smaller windows on the right side of the screen).
 The program configures the system clock to provide interrupts
 100 times a second, and automatically context switches between
 the two user programs.
+
+Paging is enabled, and so the intial page directory (initdir)
+is used to allow the program to run in kernel space. Then, new 
+page directories can be allocated and intialized, one for each
+user.
+
+Each user context will be given a page table, with the kernel
+space already mapped for each user. Because paging is enabled, 
+a user can only write to the console if a page table is set 
+for that user with the appropriate console I/O mappings, or a 
+system call is created for the kernel to perform the write. 
 
 > export kernel :: Proc Unit
 > kernel
@@ -35,8 +45,8 @@ the two user programs.
 >        putPageDir initdir
 >        initPhysMap bootdata
 >        -- pgdir <- allocPageDir
+>        -- Re-add code for running both users when page directories can be allocated and mapped
 >        puts "\nHalting kernel, returning to mimgload\n"
->        -- Add back in code for running both users later
 
 > runTwo :: Ref MimgHeader -> Ref MimgHeader -> Proc Unit
 > runTwo top bot

@@ -5,6 +5,10 @@
 > require "intervals.llc"
 > require "mimg.llc"
 
+This file contains functions for managing the physical memory 
+used for paging structures, as well as functions to allocate 
+and intialize those paging structures.
+
 ----------------------------------------------
 # INTERVAL SET MANAGEMENT 
 ----------------------------------------------

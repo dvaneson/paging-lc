@@ -2,7 +2,7 @@
 > require "bit.llc"
 > require "ix.llc"
 
-This file defines functions for paging, segementation, 
+This file contains functions for paging, segementation, 
 and context switching, following IA-32 specifications.
 
 ----------------------------------------------
